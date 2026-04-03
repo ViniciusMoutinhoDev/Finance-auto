@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Paleta Black Obsidian VIP */
+  --bg-dark: #05050A; /* Fundo puro profundo */
+  --glass-bg: rgba(255, 255, 255, 0.02); /* Vidro jateado mega transparente */
+  --glass-bg-hover: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  
+  /* Neons */
+  --neon-primary: #6EE7B7;
+  --neon-positive: #4ADE80;
+  --neon-negative: #FF4757; /* Vermelho mais vibrante e premium */
+  
+  /* Textos */
+  --text-primary: #F8FAFC;
+  --text-muted: #64748B;
+  --text-accent: #94A3B8;
+
+  --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  min-height: 100vh;
+  /* Fundo sutil com glow central para luxo e desejo */
+  background-image: radial-gradient(circle at 50% 0%, rgba(110, 231, 183, 0.04) 0%, transparent 60%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Scrollbar invisível / minimalista */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+/* --- CONTAINERS & LAYOUT --- */
+.app-container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* --- GLASSMORPHISM CARDS --- */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-premium);
+  padding: 24px;
+}
+
+/* Efeito de interatividade luxuoso (usado pro Drag and Drop) */
+.glass-panel.interactive { transition: all 0.3s ease; cursor: pointer; }
+.glass-panel.interactive:hover { background: var(--glass-bg-hover); border-color: rgba(110, 231, 183, 0.2); transform: translateY(-2px); }
+.glass-panel.interactive.dragging { border-color: var(--neon-primary); background: rgba(110, 231, 183, 0.05); }
+
+.summary-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0; width: 3px;
+  background: var(--card-accent, var(--glass-border));
+}
+
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+/* --- RESPONSIVIDADE DASHBOARD --- */
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .app-container { padding: 24px 16px; }
+  .summary-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* --- TIPOGRAFIA --- */
+.h-title { font-size: 24px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+.h-section { color: var(--text-accent); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; font-weight: 600; display: block; }
+
+.text-mono { font-family: 'DM Mono', monospace; }
+.text-positive { color: var(--neon-positive); font-weight: 600; }
+.text-negative { color: var(--neon-negative); font-weight: 600; }
+
+/* --- CONTROLES RESPONSIVOS --- */
+.filter-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.search-input {
+  background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px;
+  color: var(--text-primary); padding: 10px 16px; font-size: 13px; outline: none; width: 100%; transition: 0.2s;
+}
+.search-input:focus { border-color: rgba(110, 231, 183, 0.4); box-shadow: 0 0 10px rgba(110, 231, 183, 0.1); }
+
+.tag-btn {
+  background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-accent);
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.tag-btn:hover { background: var(--glass-bg-hover); color: var(--text-primary); }
+
+/* --- TABELA RESPONSIVA ("TABLE" PARA CARTÕES) --- */
+.table-container { width: 100%; border-collapse: collapse; }
+.table-container th {
+  color: var(--text-muted); text-align: left; padding: 12px 16px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 1px; font-weight: 600; border-bottom: 1px solid var(--glass-border);
+}
+.table-container td {
+  padding: 14px 16px; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.02);
+  vertical-align: middle;
+}
+.table-container tr { transition: background 0.2s; }
+.table-container tbody tr:hover { background: rgba(255, 255, 255, 0.015); }
+
+/* Mágica do Mobile: Trance Table em Cards */
+@media (max-width: 768px) {
+  .table-container, .table-container thead, .table-container tbody, .table-container th, .table-container td, .table-container tr {
+    display: block; width: 100%;
+  }
+  .table-container thead { display: none; /* Esconde cabecalho */ }
+  
+  .table-container tr {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px 8px;
+  }
+  .table-container tbody tr:hover { background: var(--glass-bg-hover); }
+
+  .table-container td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    padding: 8px 12px;
+    text-align: right;
+  }
+  .table-container td:last-child { border-bottom: none; }
+  
+  /* Injeta o nome da coluna via data-label */
+  .table-container td::before {
+    content: attr(data-label);
+    color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+  }
+
+  .td-desc { max-width: 100%; white-space: normal !important; text-align: right; }
+}
+
+.table-header-flex { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px; gap: 12px;}
