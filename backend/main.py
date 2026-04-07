@@ -1,5 +1,6 @@
 import io
 import hashlib
+import re
 from typing import List, Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
@@ -45,6 +46,16 @@ class TransactionUpdate(BaseModel):
 class ColorUpdate(BaseModel):
     category: str
     hex_color: str
+
+
+def _validate_month(month: str) -> str:
+    m = (month or "").strip()
+    if not re.fullmatch(r"\d{4}-\d{2}", m):
+        raise HTTPException(status_code=422, detail="month inválido. Use o formato YYYY-MM (ex: 2026-04).")
+    mm = int(m[5:7])
+    if mm < 1 or mm > 12:
+        raise HTTPException(status_code=422, detail="month inválido. Mês deve ser 01..12.")
+    return m
 
 # --- Fluxo de Autenticação (Auth) ---
 
@@ -129,6 +140,124 @@ async def upload_pdf(
     db.commit()
 
     return {"message": f"Extração concluída. {sucesso_adicionados} transações injetadas no banco de forma irrepetível."}
+
+
+@app.post("/api/upload-batch")
+async def upload_batch_for_month(
+    month: str,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Upload de várias faturas (PDFs) para um mês (YYYY-MM).
+    Salva um registro de batch, registra documentos enviados e injeta transações deduplicadas.
+    """
+    month = _validate_month(month)
+
+    if not files:
+        raise HTTPException(status_code=422, detail="Nenhum arquivo enviado.")
+
+    batch = models.UploadBatch(month=month, user_id=current_user.id)
+    db.add(batch)
+    db.commit()
+    db.refresh(batch)
+
+    total_extracted = 0
+    total_inserted = 0
+    doc_results: list[dict] = []
+
+    for f in files:
+        if not (f.filename or "").lower().endswith(".pdf"):
+            doc_results.append({"filename": f.filename, "status": "skipped", "reason": "Apenas PDF"})
+            continue
+
+        pdf_bytes = await f.read()
+        if not pdf_bytes:
+            doc_results.append({"filename": f.filename, "status": "skipped", "reason": "Arquivo vazio"})
+            continue
+
+        doc_hash = hashlib.sha256(pdf_bytes).hexdigest()
+        existing_doc = (
+            db.query(models.UploadedDocument)
+            .filter(models.UploadedDocument.user_id == current_user.id, models.UploadedDocument.doc_hash == doc_hash)
+            .first()
+        )
+        if existing_doc:
+            doc_results.append({"filename": f.filename, "status": "skipped", "reason": "PDF já enviado"})
+            continue
+
+        raw_transactions = extract_transactions(pdf_bytes)
+        extracted_count = len(raw_transactions or [])
+        total_extracted += extracted_count
+
+        if not raw_transactions:
+            # Ainda registramos o doc, para não repetir upload inútil
+            doc = models.UploadedDocument(
+                user_id=current_user.id,
+                batch_id=batch.id,
+                original_filename=f.filename or "sem_nome.pdf",
+                doc_hash=doc_hash,
+            )
+            db.add(doc)
+            db.commit()
+            doc_results.append({"filename": f.filename, "status": "ok", "extracted": 0, "inserted": 0})
+            continue
+
+        categorized = categorize_transactions(raw_transactions)
+        inserted_for_doc = 0
+
+        for tx in categorized:
+            base_str = f"{current_user.id}-{tx['date']}-{tx['description']}-{tx['amount']}"
+            tx_hash = hashlib.md5(base_str.encode()).hexdigest()
+
+            existing_tx = (
+                db.query(models.Transaction)
+                .filter(models.Transaction.transaction_hash == tx_hash)
+                .first()
+            )
+            if existing_tx:
+                continue
+
+            new_tx = models.Transaction(
+                date=tx["date"],
+                description=tx["description"],
+                category=tx.get("category") or "Outros",
+                amount=tx["amount"],
+                transaction_hash=tx_hash,
+                user_id=current_user.id,
+                batch_id=batch.id,
+            )
+            db.add(new_tx)
+            inserted_for_doc += 1
+
+        doc = models.UploadedDocument(
+            user_id=current_user.id,
+            batch_id=batch.id,
+            original_filename=f.filename or "sem_nome.pdf",
+            doc_hash=doc_hash,
+        )
+        db.add(doc)
+
+        db.commit()
+        total_inserted += inserted_for_doc
+        doc_results.append(
+            {"filename": f.filename, "status": "ok", "extracted": extracted_count, "inserted": inserted_for_doc}
+        )
+
+    batch.total_files = len(files)
+    batch.total_extracted = total_extracted
+    batch.total_inserted = total_inserted
+    db.commit()
+
+    return {
+        "batchId": batch.id,
+        "month": month,
+        "totalFiles": len(files),
+        "totalExtracted": total_extracted,
+        "totalInserted": total_inserted,
+        "documents": doc_results,
+    }
 
 
 @app.get("/api/transactions")

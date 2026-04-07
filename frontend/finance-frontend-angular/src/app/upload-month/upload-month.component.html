@@ -1,0 +1,92 @@
+<div class="page">
+  <div class="bg-orb orb-a"></div>
+  <div class="bg-orb orb-b"></div>
+  <div class="bg-orb orb-c"></div>
+
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="logo">FA</div>
+      <div class="brand-text">
+        <div class="title">FinanceAuto</div>
+        <div class="subtitle">Upload de faturas por mês • múltiplos PDFs</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" type="button" (click)="addMonth()">+ Adicionar mês</button>
+      <button class="btn primary" type="button" (click)="uploadAll()">Enviar tudo</button>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="hero glass">
+      <div class="hero-left">
+        <h1>Organize suas faturas em minutos</h1>
+        <p>
+          Selecione os meses que deseja importar e envie todos os PDFs de cada mês.
+          As transações ficam salvas e são deduplicadas automaticamente.
+        </p>
+      </div>
+      <div class="hero-right">
+        <div class="stat">
+          <div class="stat-label">Meses</div>
+          <div class="stat-value">{{ batches.length }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Arquivos</div>
+          <div class="stat-value">
+            {{ batches.reduce((acc, b) => acc + (b.files.length || 0), 0) }}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card glass">
+      <div class="card-head">
+        <div>
+          <h2>Meses para upload</h2>
+          <p class="muted">Para cada mês, selecione todos os PDFs correspondentes.</p>
+        </div>
+      </div>
+
+      <div class="batches">
+        <div class="batch glass" *ngFor="let b of batches; let i = index">
+          <div class="batch-head">
+            <div class="field">
+              <label>Mês</label>
+              <input class="control" type="month" [(ngModel)]="b.month" />
+            </div>
+
+            <div class="batch-actions">
+              <button class="btn ghost danger" type="button" (click)="removeMonth(i)">Remover</button>
+            </div>
+          </div>
+
+          <div class="drop">
+            <div class="drop-left">
+              <div class="drop-title">PDFs do mês</div>
+              <div class="drop-sub">Selecione múltiplos arquivos (somente PDF)</div>
+            </div>
+            <div class="drop-right">
+              <label class="btn ghost file-btn">
+                Selecionar PDFs
+                <input type="file" (change)="onFileChange(i, $event)" multiple accept="application/pdf" />
+              </label>
+            </div>
+          </div>
+
+          <div class="file-list" *ngIf="b.files.length">
+            <div class="chips">
+              <div class="chip" *ngFor="let f of b.files">
+                <span class="chip-dot"></span>
+                <span class="chip-name">{{ f.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" *ngIf="status">{{ status }}</div>
+    </section>
+  </main>
+</div>
+
